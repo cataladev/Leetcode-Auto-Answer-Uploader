@@ -60,6 +60,22 @@ defmodule LeetCodeSync.LeetCodeClient do
   }
   """
 
+  @submission_details_query """
+  query submissionDetails($submissionId: Int!) {
+    submissionDetails(submissionId: $submissionId) {
+      code
+      runtime
+      memory
+      timestamp
+      statusDisplay
+      lang {
+        name
+        verboseName
+      }
+    }
+  }
+  """
+
   @spec fetch_recent_accepted_submissions(Config.t()) ::
           {:ok, [map()]} | {:error, term()}
   def fetch_recent_accepted_submissions(config) do
@@ -101,17 +117,8 @@ defmodule LeetCodeSync.LeetCodeClient do
          submissions when is_list(submissions) <- extract_submission_list(payload),
          accepted when accepted != [] <- accepted_submissions(submissions),
          latest <- Enum.max_by(accepted, &Map.fetch!(&1, :timestamp)),
-         {:ok, html} <- fetch_submission_page(config, latest.id),
-         {:ok, submitted_code} <- extract_submission_code(html) do
-      {:ok,
-       %{
-         submission_id: latest.id,
-         language: latest.language,
-         runtime: latest.runtime,
-         memory: latest.memory,
-         timestamp: latest.timestamp,
-         submitted_code: submitted_code
-       }}
+         {:ok, submission_details} <- fetch_submission_details(config, latest) do
+      {:ok, submission_details}
     else
       [] -> {:error, {:accepted_submission_missing, title_slug}}
       {:error, reason} -> {:error, reason}
@@ -169,6 +176,52 @@ defmodule LeetCodeSync.LeetCodeClient do
     end
   end
 
+  defp fetch_submission_details(config, latest_submission) do
+    variables = %{"submissionId" => normalize_submission_id(latest_submission.id)}
+
+    with {:ok, payload} <- graphql(config, @submission_details_query, variables),
+         details when is_map(details) <- get_in(payload, ["data", "submissionDetails"]),
+         code when is_binary(code) and code != "" <- details["code"] do
+      {:ok,
+       %{
+         submission_id: latest_submission.id,
+         language: extract_submission_language(details["lang"]) || latest_submission.language,
+         runtime: details["runtime"] || latest_submission.runtime,
+         memory: details["memory"] || latest_submission.memory,
+         timestamp: parse_timestamp(details["timestamp"] || latest_submission.timestamp),
+         submitted_code: code
+       }}
+    else
+      nil ->
+        fetch_submission_details_from_page(config, latest_submission)
+
+      "" ->
+        fetch_submission_details_from_page(config, latest_submission)
+
+      {:error, reason} ->
+        Logger.debug(
+          "submissionDetails GraphQL lookup failed for #{latest_submission.id}: #{inspect(reason)}"
+        )
+
+        fetch_submission_details_from_page(config, latest_submission)
+    end
+  end
+
+  defp fetch_submission_details_from_page(config, latest_submission) do
+    with {:ok, html} <- fetch_submission_page(config, latest_submission.id),
+         {:ok, submitted_code} <- extract_submission_code(html) do
+      {:ok,
+       %{
+         submission_id: latest_submission.id,
+         language: latest_submission.language,
+         runtime: latest_submission.runtime,
+         memory: latest_submission.memory,
+         timestamp: latest_submission.timestamp,
+         submitted_code: submitted_code
+       }}
+    end
+  end
+
   defp normalize_payload(body) when is_binary(body), do: JSON.decode!(body)
   defp normalize_payload(body), do: body
 
@@ -219,6 +272,8 @@ defmodule LeetCodeSync.LeetCodeClient do
 
   defp parse_timestamp(value) when is_integer(value), do: value
   defp parse_timestamp(value) when is_binary(value), do: value |> String.to_integer()
+  defp normalize_submission_id(value) when is_integer(value), do: value
+  defp normalize_submission_id(value) when is_binary(value), do: String.to_integer(value)
 
   defp ensure_auth_ready(config) do
     cond do
@@ -234,6 +289,9 @@ defmodule LeetCodeSync.LeetCodeClient do
         :ok
     end
   end
+
+  defp extract_submission_language(%{"name" => name}) when is_binary(name), do: name
+  defp extract_submission_language(_value), do: nil
 
   defp extract_submission_code(html) do
     patterns = [

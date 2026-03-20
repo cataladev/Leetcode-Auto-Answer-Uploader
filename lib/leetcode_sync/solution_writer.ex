@@ -68,13 +68,42 @@ defmodule LeetCodeSync.SolutionWriter do
     :ok
   end
 
-  @spec problem_present?(Path.t(), String.t(), String.t()) :: boolean()
-  def problem_present?(repo_path, title_slug, title) do
-    folder_path = Path.join(repo_path, FileUtils.safe_folder_name(title))
+  @spec problem_present?(Path.t(), map()) :: boolean()
+  def problem_present?(repo_path, question) do
+    folder_path = Path.join(repo_path, FileUtils.safe_folder_name(question.title || ""))
     manifest_path = Path.join(repo_path, @manifest_relative_path)
     manifest = load_manifest(manifest_path)
 
-    Map.has_key?(manifest["solutions"], title_slug) or File.exists?(folder_path)
+    Map.has_key?(manifest["solutions"], question.title_slug) or
+      File.exists?(folder_path) or
+      legacy_solution_present?(repo_path, question)
+  end
+
+  defp legacy_solution_present?(_repo_path, %{frontend_id: nil}), do: false
+
+  defp legacy_solution_present?(repo_path, question) do
+    frontend_id = to_string(question.frontend_id)
+
+    patterns =
+      [
+        legacy_solution_pattern(repo_path, question.difficulty, "#{frontend_id}.*"),
+        legacy_solution_pattern(repo_path, question.difficulty, frontend_id),
+        Path.join([repo_path, "**", "#{frontend_id}.*"]),
+        Path.join([repo_path, "**", frontend_id])
+      ]
+      |> Enum.reject(&is_nil/1)
+
+    Enum.any?(patterns, fn pattern ->
+      pattern
+      |> Path.wildcard()
+      |> Enum.any?(&File.regular?/1)
+    end)
+  end
+
+  defp legacy_solution_pattern(_repo_path, nil, _basename), do: nil
+
+  defp legacy_solution_pattern(repo_path, difficulty, basename) do
+    Path.join([repo_path, String.downcase(to_string(difficulty)), basename])
   end
 
   defp write_problem(

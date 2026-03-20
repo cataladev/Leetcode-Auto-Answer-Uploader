@@ -54,35 +54,37 @@ defmodule LeetCodeSync.Sync do
       State.processed?(state, problem.title_slug) ->
         process_submissions(rest, state, repo, config, skip(summary, problem, :already_processed))
 
-      SolutionWriter.problem_present?(repo.path, problem.title_slug, problem.title) ->
-        updated_state =
-          State.mark_processed(state, problem, %{
-            folder_name: FileUtils.safe_folder_name(problem.title),
-            commit_message: "Add LeetCode solution: #{problem.title}",
-            commit_hash: nil,
-            push_status: "already_present",
-            submitted_code_retrieved: false
-          })
-
-        unless config.dry_run do
-          State.save!(config.state_file_path, updated_state)
-        end
-
-        process_submissions(
-          rest,
-          updated_state,
-          repo,
-          config,
-          skip(summary, problem, :already_in_repo)
-        )
-
       true ->
-        sync_problem(problem, rest, state, repo, config, summary)
+        question = fetch_question_or_fallback(config, problem)
+
+        if SolutionWriter.problem_present?(repo.path, question) do
+          updated_state =
+            State.mark_processed(state, problem, %{
+              folder_name: FileUtils.safe_folder_name(question.title || problem.title),
+              commit_message: "Add LeetCode solution: #{question.title || problem.title}",
+              commit_hash: nil,
+              push_status: "already_present",
+              submitted_code_retrieved: false
+            })
+
+          unless config.dry_run do
+            State.save!(config.state_file_path, updated_state)
+          end
+
+          process_submissions(
+            rest,
+            updated_state,
+            repo,
+            config,
+            skip(summary, problem, :already_in_repo)
+          )
+        else
+          sync_problem(problem, question, rest, state, repo, config, summary)
+        end
     end
   end
 
-  defp sync_problem(problem, rest, state, repo, config, summary) do
-    question = fetch_question_or_fallback(config, problem)
+  defp sync_problem(problem, question, rest, state, repo, config, summary) do
     submission_result = LeetCodeClient.fetch_latest_submission_code(config, problem.title_slug)
 
     case SolutionWriter.stage_problem(repo.path, problem, question, submission_result, config) do

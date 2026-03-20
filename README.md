@@ -50,7 +50,7 @@ Elixir was chosen because it is a strong fit for a scheduler-friendly CLI that n
 3. Ensure the target repo exists locally, cloning it if needed.
 4. Pull the latest target branch and push any previously committed-but-unpushed local commits.
 5. Fetch recent accepted LeetCode submissions for the configured username.
-6. Filter out problems already recorded in local state or the committed target-repo manifest.
+6. Filter out problems already recorded in local state, the committed target-repo manifest, or legacy numeric-ID solution files already present in the target repo.
 7. For each new problem:
    - fetch question metadata
    - try to fetch the real submitted code if LeetCode auth is configured

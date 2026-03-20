@@ -24,7 +24,12 @@ defmodule LeetCodeSync.Env do
   defp parse_assignment(line) do
     case String.split(line, "=", parts: 2) do
       [key, value] ->
-        System.put_env(String.trim(key), normalize_value(String.trim(value)))
+        trimmed_key = String.trim(key)
+
+        if is_nil(System.get_env(trimmed_key)) do
+          System.put_env(trimmed_key, normalize_value(String.trim(value)))
+        end
+
         :ok
 
       _ ->
