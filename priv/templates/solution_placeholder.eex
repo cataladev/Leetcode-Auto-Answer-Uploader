@@ -1,0 +1,9 @@
+Actual submitted code was not available during sync.
+
+Problem: <%= @title %>
+Slug: <%= @title_slug %>
+LeetCode URL: <%= @leetcode_url %>
+Reason: <%= @reason %>
+
+To sync real submitted code, set `LEETCODE_SESSION` and `LEETCODE_CSRF_TOKEN`
+for the same LeetCode account as `LEETCODE_USERNAME`.
