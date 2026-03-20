@@ -140,6 +140,8 @@ Required or commonly used values:
 - `COMMIT_AUTHOR_NAME`
 - `COMMIT_AUTHOR_EMAIL`
 
+Default branch for the provided `https://github.com/cataladev/leetcode` repository is `master`, so the default `.env.example` is prefilled that way.
+
 Optional behavior controls:
 
 - `DRY_RUN`

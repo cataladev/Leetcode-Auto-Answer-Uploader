@@ -88,7 +88,7 @@ defmodule LeetCodeSync.Config do
       target_repo_url: string_env("TARGET_REPO_URL", "https://github.com/cataladev/leetcode"),
       target_repo_local_path: target_repo_local_path,
       solution_file_extension: string_env("SOLUTION_FILE_EXTENSION", "auto"),
-      git_branch: string_env("GIT_BRANCH", "main"),
+      git_branch: string_env("GIT_BRANCH", "master"),
       commit_author_name: string_env("COMMIT_AUTHOR_NAME", "Carlos Arena"),
       commit_author_email: string_env("COMMIT_AUTHOR_EMAIL", "carlos@catala.dev"),
       leetcode_session: nullable_env("LEETCODE_SESSION"),

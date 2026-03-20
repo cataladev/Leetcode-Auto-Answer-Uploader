@@ -5,7 +5,7 @@ defmodule LeetCodeSync.FileLock do
 
   alias LeetCodeSync.FileUtils
 
-  @spec with_lock(Path.t(), (() -> {:ok, map()} | {:error, term()})) ::
+  @spec with_lock(Path.t(), (-> {:ok, map()} | {:error, term()})) ::
           {:ok, map()} | {:error, term()}
   def with_lock(lock_path, fun) when is_function(fun, 0) do
     FileUtils.ensure_directory!(lock_path)

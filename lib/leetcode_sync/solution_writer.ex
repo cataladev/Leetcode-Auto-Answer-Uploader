@@ -31,13 +31,28 @@ defmodule LeetCodeSync.SolutionWriter do
            manifest_path: manifest_path,
            commit_paths: [folder_name, @manifest_relative_path],
            metadata:
-             build_metadata(problem, question, submission_result, folder_name, config.solution_file_extension),
+             build_metadata(
+               problem,
+               question,
+               submission_result,
+               folder_name,
+               config.solution_file_extension
+             ),
            rollback: nil,
            dry_run: true
          }}
 
       true ->
-        write_problem(problem, question, submission_result, folder_name, folder_path, manifest_path, manifest, config)
+        write_problem(
+          problem,
+          question,
+          submission_result,
+          folder_name,
+          folder_path,
+          manifest_path,
+          manifest,
+          config
+        )
     end
   end
 
@@ -62,7 +77,16 @@ defmodule LeetCodeSync.SolutionWriter do
     Map.has_key?(manifest["solutions"], title_slug) or File.exists?(folder_path)
   end
 
-  defp write_problem(problem, question, submission_result, folder_name, folder_path, manifest_path, manifest, config) do
+  defp write_problem(
+         problem,
+         question,
+         submission_result,
+         folder_name,
+         folder_path,
+         manifest_path,
+         manifest,
+         config
+       ) do
     previous_manifest_contents =
       if File.exists?(manifest_path) do
         File.read!(manifest_path)
@@ -70,16 +94,31 @@ defmodule LeetCodeSync.SolutionWriter do
         nil
       end
 
-    metadata = build_metadata(problem, question, submission_result, folder_name, config.solution_file_extension)
+    metadata =
+      build_metadata(
+        problem,
+        question,
+        submission_result,
+        folder_name,
+        config.solution_file_extension
+      )
 
     try do
       File.mkdir_p!(folder_path)
 
       solution_filename = metadata["solution_file"]
 
-      write_file(Path.join(folder_path, solution_filename), solution_contents(problem, submission_result, metadata, config))
+      write_file(
+        Path.join(folder_path, solution_filename),
+        solution_contents(problem, submission_result, metadata, config)
+      )
+
       write_file(Path.join(folder_path, "problem.json"), JSON.encode_pretty!(metadata) <> "\n")
-      write_file(Path.join(folder_path, "README.md"), render_template(config.project_root, "problem_readme.eex", %{metadata: metadata}))
+
+      write_file(
+        Path.join(folder_path, "README.md"),
+        render_template(config.project_root, "problem_readme.eex", %{metadata: metadata})
+      )
 
       updated_manifest =
         put_in(
@@ -156,7 +195,8 @@ defmodule LeetCodeSync.SolutionWriter do
   defp placeholder_reason({:ok, _submission}), do: nil
   defp placeholder_reason({:error, reason}), do: inspect(reason)
 
-  defp solution_contents(_problem, {:ok, submission}, _metadata, _config), do: submission[:submitted_code]
+  defp solution_contents(_problem, {:ok, submission}, _metadata, _config),
+    do: submission[:submitted_code]
 
   defp solution_contents(problem, {:error, reason}, metadata, config) do
     render_template(

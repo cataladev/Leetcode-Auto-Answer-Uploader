@@ -68,7 +68,13 @@ defmodule LeetCodeSync.Sync do
           State.save!(config.state_file_path, updated_state)
         end
 
-        process_submissions(rest, updated_state, repo, config, skip(summary, problem, :already_in_repo))
+        process_submissions(
+          rest,
+          updated_state,
+          repo,
+          config,
+          skip(summary, problem, :already_in_repo)
+        )
 
       true ->
         sync_problem(problem, rest, state, repo, config, summary)
@@ -97,7 +103,11 @@ defmodule LeetCodeSync.Sync do
         process_submissions(rest, updated_state, repo, config, skip(summary, problem, reason))
 
       {:error, reason} ->
-        {:error, %{summary | errors: summary.errors ++ [%{problem: problem.title, reason: inspect(reason)}]}}
+        {:error,
+         %{
+           summary
+           | errors: summary.errors ++ [%{problem: problem.title, reason: inspect(reason)}]
+         }}
 
       {:ok, prepared} when prepared.dry_run ->
         process_submissions(rest, state, repo, config, dry_run(summary, prepared.metadata))
@@ -160,7 +170,12 @@ defmodule LeetCodeSync.Sync do
           {:error, reason} ->
             SolutionWriter.rollback(prepared)
             Git.unstage_paths(repo.path, prepared.commit_paths, config)
-            {:error, %{summary | errors: summary.errors ++ [%{problem: problem.title, reason: inspect(reason)}]}}
+
+            {:error,
+             %{
+               summary
+               | errors: summary.errors ++ [%{problem: problem.title, reason: inspect(reason)}]
+             }}
         end
     end
   end
@@ -171,7 +186,9 @@ defmodule LeetCodeSync.Sync do
         question
 
       {:error, reason} ->
-        Logger.warning("Question detail lookup failed for #{problem.title_slug}: #{inspect(reason)}")
+        Logger.warning(
+          "Question detail lookup failed for #{problem.title_slug}: #{inspect(reason)}"
+        )
 
         %{
           frontend_id: nil,
@@ -193,7 +210,11 @@ defmodule LeetCodeSync.Sync do
   end
 
   defp processed(summary, metadata, git_result) do
-    %{summary | processed: summary.processed ++ [%{title: metadata["title"], commit_hash: git_result.commit_hash}]}
+    %{
+      summary
+      | processed:
+          summary.processed ++ [%{title: metadata["title"], commit_hash: git_result.commit_hash}]
+    }
   end
 
   defp skip(summary, problem, reason) do

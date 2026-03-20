@@ -11,6 +11,7 @@ defmodule LeetCodeSync.Git do
 
     with :ok <- ensure_git_available(),
          :ok <- ensure_repo_present(config),
+         :ok <- ensure_origin_remote(config),
          :ok <- checkout_branch(config),
          :ok <- ensure_clean_worktree(config),
          :ok <- pull_latest(config),
@@ -80,7 +81,11 @@ defmodule LeetCodeSync.Git do
              config
            ) do
       if clone_url != config.target_repo_url do
-        run_ok(config.target_repo_local_path, ["remote", "set-url", "origin", config.target_repo_url], config)
+        run_ok(
+          config.target_repo_local_path,
+          ["remote", "set-url", "origin", config.target_repo_url],
+          config
+        )
       else
         :ok
       end
@@ -88,16 +93,21 @@ defmodule LeetCodeSync.Git do
   end
 
   defp checkout_branch(config) do
-    case run(config.target_repo_local_path, ["checkout", config.git_branch], config) do
-      {:ok, _output} ->
-        :ok
+    repo_path = config.target_repo_local_path
 
-      {:error, _reason} ->
+    cond do
+      branch_exists?(repo_path, config.git_branch, config) ->
+        run_ok(repo_path, ["checkout", config.git_branch], config)
+
+      remote_branch_exists?(repo_path, config.git_branch, config) ->
         run_ok(
-          config.target_repo_local_path,
+          repo_path,
           ["checkout", "-b", config.git_branch, "--track", "origin/#{config.git_branch}"],
           config
         )
+
+      true ->
+        run_ok(repo_path, ["checkout", "-B", config.git_branch], config)
     end
   end
 
@@ -118,7 +128,15 @@ defmodule LeetCodeSync.Git do
   end
 
   defp pull_latest(config) do
-    run_ok(config.target_repo_local_path, ["pull", "--ff-only", "origin", config.git_branch], config)
+    if remote_branch_exists?(config.target_repo_local_path, config.git_branch, config) do
+      run_ok(
+        config.target_repo_local_path,
+        ["pull", "--ff-only", "origin", config.git_branch],
+        config
+      )
+    else
+      :ok
+    end
   end
 
   defp push_pending_local_commits(config) do
@@ -169,6 +187,32 @@ defmodule LeetCodeSync.Git do
       {:ok, _output} -> :ok
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp ensure_origin_remote(config) do
+    repo_path = config.target_repo_local_path
+
+    case run(repo_path, ["remote", "get-url", "origin"], config) do
+      {:ok, _url} ->
+        :ok
+
+      {:error, _reason} ->
+        run_ok(repo_path, ["remote", "add", "origin", config.target_repo_url], config)
+    end
+  end
+
+  defp branch_exists?(repo_path, branch, config) do
+    match?(
+      {:ok, _},
+      run(repo_path, ["show-ref", "--verify", "--quiet", "refs/heads/#{branch}"], config)
+    )
+  end
+
+  defp remote_branch_exists?(repo_path, branch, config) do
+    match?(
+      {:ok, _},
+      run(repo_path, ["ls-remote", "--exit-code", "--heads", "origin", branch], config)
+    )
   end
 
   defp authenticated_remote_url(%Config{github_token: nil}), do: nil

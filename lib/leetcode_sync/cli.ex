@@ -29,20 +29,19 @@ defmodule LeetCodeSync.CLI do
     config = Config.load!(options)
     configure_logger(config)
 
-    case options[:healthcheck] do
-      true ->
-        config
-        |> Sync.healthcheck()
-        |> exit_with_status()
-
-      false ->
-        config
-        |> Sync.run()
-        |> exit_with_status()
+    if options[:healthcheck] do
+      config
+      |> Sync.healthcheck()
+      |> exit_with_status()
+    else
+      config
+      |> Sync.run()
+      |> exit_with_status()
     end
   rescue
     error ->
       Logger.error(Exception.format(:error, error, __STACKTRACE__))
+      Logger.flush()
       System.halt(1)
   end
 
@@ -53,11 +52,13 @@ defmodule LeetCodeSync.CLI do
 
   defp exit_with_status({:ok, summary}) do
     Logger.info("Run complete: #{inspect(summary)}")
+    Logger.flush()
     System.halt(0)
   end
 
   defp exit_with_status({:error, reason}) do
     Logger.error("Run failed: #{inspect(reason)}")
+    Logger.flush()
     System.halt(1)
   end
 

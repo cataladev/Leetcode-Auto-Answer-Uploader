@@ -119,7 +119,8 @@ defmodule LeetCodeSync.LeetCodeClient do
   end
 
   defp handle_empty_recent_submission_list(config) do
-    with {:ok, payload} <- graphql(config, @matched_user_query, %{"username" => config.leetcode_username}) do
+    with {:ok, payload} <-
+           graphql(config, @matched_user_query, %{"username" => config.leetcode_username}) do
       case get_in(payload, ["data", "matchedUser", "username"]) do
         nil -> {:error, {:invalid_username, config.leetcode_username}}
         _username -> {:ok, []}
