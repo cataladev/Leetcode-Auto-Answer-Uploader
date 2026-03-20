@@ -1,0 +1,5 @@
+# Daily run at 09:00 local time.
+0 9 * * * cd __PROJECT_ROOT__ && ./scripts/run_sync.sh >> __PROJECT_ROOT__/logs/cron.log 2>&1
+
+# Run at machine boot for always-on systems.
+@reboot cd __PROJECT_ROOT__ && ./scripts/run_sync.sh >> __PROJECT_ROOT__/logs/cron.log 2>&1

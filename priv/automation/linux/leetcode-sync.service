@@ -1,0 +1,12 @@
+[Unit]
+Description=LeetCode sync automation
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=__PROJECT_ROOT__
+ExecStart=__PROJECT_ROOT__/scripts/run_sync.sh
+
+[Install]
+WantedBy=default.target
