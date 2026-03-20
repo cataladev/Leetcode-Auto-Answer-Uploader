@@ -115,8 +115,8 @@ defmodule LeetCodeSync.Config do
     if Path.type(path) == :absolute do
       Path.expand(path)
     else
-      path
-      |> Path.join(project_root)
+      project_root
+      |> Path.join(path)
       |> Path.expand()
     end
   end

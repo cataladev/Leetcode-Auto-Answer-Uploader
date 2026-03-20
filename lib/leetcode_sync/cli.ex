@@ -22,9 +22,8 @@ defmodule LeetCodeSync.CLI do
       )
 
     if invalid != [] do
-      invalid
-      |> Enum.map_join(", ", fn {key, value} -> "--#{key}=#{value}" end)
-      |> fail!("Unsupported arguments")
+      details = Enum.map_join(invalid, ", ", fn {key, value} -> "--#{key}=#{value}" end)
+      fail!("Unsupported arguments", details)
     end
 
     config = Config.load!(options)
